@@ -27,7 +27,6 @@ public class OSSComponent extends DefaultComponent {
 
     public OSSComponent(CamelContext context) {
         super(context);
-
     }
 
     @Override
@@ -40,13 +39,8 @@ public class OSSComponent extends DefaultComponent {
         configuration.setBucketName(remaining);
         OSSEndpoint endpoint = new OSSEndpoint( this, uri,configuration);
         setProperties(endpoint, parameters);
-        configuration.setAccessKeyId(parameters.remove("accessKeyId").toString());
-        configuration.setAccessKeySecret(parameters.remove("accessKeySecret").toString());
-        configuration.setEndpoint(parameters.remove("endpoint").toString());
-        configuration.setOssClient(new OSSClientImpl(configuration).getOSSClient());
-
         if (configuration.getOssClient()== null && (configuration.getAccessKeyId() == null || configuration.getAccessKeySecret() == null)) {
-            throw new IllegalArgumentException("useIAMCredentials is set to false, AmazonS3Client or accessKey and secretKey must be specified");
+            throw new IllegalArgumentException("ossClient or accessKeyId and accessKeySecret must be specified");
         }
 
         return endpoint;
@@ -58,5 +52,17 @@ public class OSSComponent extends DefaultComponent {
 
     public void setConfiguration(OSSConfiguration configuration) {
         this.configuration = configuration;
+    }
+
+    @Override
+    protected void setProperties(Endpoint endpoint, Map<String, Object> parameters) throws Exception {
+        super.setProperties(endpoint, parameters);
+        OSSEndpoint ossEndpoint=   (OSSEndpoint)endpoint;
+        OSSConfiguration configuration = ossEndpoint.getConfiguration();
+        configuration.setAccessKeyId(parameters.remove("accessKeyId").toString());
+        configuration.setAccessKeySecret(parameters.remove("accessKeySecret").toString());
+        configuration.setEndpoint(parameters.remove("endpoint").toString());
+        configuration.setOssClient(new OSSClientImpl(configuration).getOSSClient());
+
     }
 }

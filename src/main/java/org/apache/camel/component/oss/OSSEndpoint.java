@@ -13,6 +13,8 @@ import org.apache.camel.util.IOHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 @UriEndpoint(firstVersion = "3.2.0", scheme = "oss", title = "OSS Storage Service", syntax = "oss://bucketName", category = {Category.CLOUD, Category.FILE})
 public class OSSEndpoint extends ScheduledPollEndpoint {
 	private static final Logger LOG = LoggerFactory.getLogger(OSSEndpoint.class);
@@ -144,5 +146,6 @@ public class OSSEndpoint extends ScheduledPollEndpoint {
 		if (ossClient != null) {
 			ossClient.shutdown();
 		}
+		System.out.println("is stoped.....");
 	}
 }
