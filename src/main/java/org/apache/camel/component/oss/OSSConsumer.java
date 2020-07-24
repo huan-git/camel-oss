@@ -1,8 +1,12 @@
 package org.apache.camel.component.oss;
 
-import org.apache.camel.Consumer;
-import org.apache.camel.Endpoint;
+import com.aliyun.oss.OSS;
 import org.apache.camel.Processor;
+import org.apache.camel.support.ScheduledBatchPollingConsumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Queue;
 
 /**
  * @program: camel-oss
@@ -10,24 +14,33 @@ import org.apache.camel.Processor;
  * @author: ahuan
  * @version: 2020-07-23 10:11
  **/
-public class OSSConsumer implements Consumer {
+public class OSSConsumer extends ScheduledBatchPollingConsumer {
+    private static final Logger LOG = LoggerFactory.getLogger(OSSConsumer.class);
 
-    public OSSConsumer(OSSEndpoint ossEndpoint, Processor processor) {
+    public OSSConsumer(OSSEndpoint endpoint, Processor processor) {
+        super(endpoint, processor);
     }
 
-    public Processor getProcessor() {
-        return null;
+    @Override
+    public int processBatch(Queue<Object> exchanges) throws Exception {
+        return 0;
     }
 
-    public Endpoint getEndpoint() {
-        return null;
+    @Override
+    protected int poll() throws Exception {
+        return 0;
+    }
+    protected OSSConfiguration getConfiguration() {
+        return getEndpoint().getConfiguration();
     }
 
-    public void start() {
-
+    protected OSS getOSSClient() {
+        return getEndpoint().getOssClient();
     }
 
-    public void stop() {
-
+    @Override
+    public OSSEndpoint getEndpoint() {
+        return (OSSEndpoint)super.getEndpoint();
     }
+
 }

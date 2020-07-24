@@ -1,8 +1,10 @@
 package org.apache.camel.component.oss;
 
 import com.aliyun.oss.OSS;
+import com.aliyun.oss.model.OSSObject;
+import com.aliyun.oss.model.ObjectMetadata;
 import org.apache.camel.*;
-import org.apache.camel.component.oss.client.OSSClient;
+import org.apache.camel.component.oss.client.impl.OSSClientImpl;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.support.ScheduledPollEndpoint;
@@ -11,10 +13,7 @@ import org.apache.camel.util.IOHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-
-@UriEndpoint(firstVersion = "3.2.0", scheme = "oss", title = "AWS 2 S3 Storage Service", syntax = "oss://bucketNameOrArn", category = {Category.CLOUD, Category.FILE})
+@UriEndpoint(firstVersion = "3.2.0", scheme = "oss", title = "OSS Storage Service", syntax = "oss://bucketName", category = {Category.CLOUD, Category.FILE})
 public class OSSEndpoint extends ScheduledPollEndpoint {
 	private static final Logger LOG = LoggerFactory.getLogger(OSSEndpoint.class);
 
@@ -45,26 +44,63 @@ public class OSSEndpoint extends ScheduledPollEndpoint {
 	public boolean isSingleton() {
 		return false;
 	}
-	
-	public Exchange createExchange(File file,String key) {
-		Exchange exchange = super.createExchange(getExchangePattern());
 
+	public Exchange createExchange(OSSObject obj) {
+		return createExchange(getExchangePattern(), obj);
+	}
+	public Exchange createExchange(ExchangePattern pattern, OSSObject obj) {
+		LOG.trace("Getting object with key [{}] from bucket [{}]...", obj.getKey(), obj.getBucketName());
+
+		ObjectMetadata objectMetadata = obj.getObjectMetadata();
+
+		LOG.trace("Got object [{}]", obj);
+
+		Exchange exchange = super.createExchange(pattern);
 		Message message = exchange.getIn();
-		message.setBody(null);
-		message.setHeader(OSSConstants.KEY, key);
-		message.setHeader(OSSConstants.BUCKET_NAME, getConfiguration().getBucketName());
-		/*message.setHeader(OSSConstants.E_TAG, s3Object.response().eTag());
-		message.setHeader(OSSConstants.LAST_MODIFIED, s3Object.response().lastModified());
-		message.setHeader(OSSConstants.VERSION_ID, s3Object.response().versionId());
-		message.setHeader(OSSConstants.CONTENT_TYPE, s3Object.response().contentType());
-		message.setHeader(OSSConstants.CONTENT_LENGTH, s3Object.response().contentLength());
-		message.setHeader(OSSConstants.CONTENT_ENCODING, s3Object.response().contentEncoding());
-		message.setHeader(OSSConstants.CONTENT_DISPOSITION, s3Object.response().contentDisposition());
-		message.setHeader(OSSConstants.CACHE_CONTROL, s3Object.response().cacheControl());
-		message.setHeader(OSSConstants.SERVER_SIDE_ENCRYPTION, s3Object.response().serverSideEncryption());
-		message.setHeader(OSSConstants.EXPIRATION_TIME, s3Object.response().expiration());
-		message.setHeader(OSSConstants.REPLICATION_STATUS, s3Object.response().replicationStatus());
-		message.setHeader(OSSConstants.STORAGE_CLASS, s3Object.response().storageClass());*/
+
+		if (configuration.isIncludeBody()) {
+			message.setBody(obj.getObjectContent());
+		} else {
+			message.setBody(null);
+		}
+
+//		message.setHeader(S3Constants.KEY, s3Object.getKey());
+//		message.setHeader(S3Constants.BUCKET_NAME, s3Object.getBucketName());
+//		message.setHeader(S3Constants.E_TAG, objectMetadata.getETag());
+//		message.setHeader(S3Constants.LAST_MODIFIED, objectMetadata.getLastModified());
+//		message.setHeader(S3Constants.VERSION_ID, objectMetadata.getVersionId());
+//		message.setHeader(S3Constants.CONTENT_TYPE, objectMetadata.getContentType());
+//		message.setHeader(S3Constants.CONTENT_MD5, objectMetadata.getContentMD5());
+//		message.setHeader(S3Constants.CONTENT_LENGTH, objectMetadata.getContentLength());
+//		message.setHeader(S3Constants.CONTENT_ENCODING, objectMetadata.getContentEncoding());
+//		message.setHeader(S3Constants.CONTENT_DISPOSITION, objectMetadata.getContentDisposition());
+//		message.setHeader(S3Constants.CACHE_CONTROL, objectMetadata.getCacheControl());
+//		message.setHeader(S3Constants.S3_HEADERS, objectMetadata.getRawMetadata());
+//		message.setHeader(S3Constants.SERVER_SIDE_ENCRYPTION, objectMetadata.getSSEAlgorithm());
+//		message.setHeader(S3Constants.USER_METADATA, objectMetadata.getUserMetadata());
+//		message.setHeader(S3Constants.EXPIRATION_TIME, objectMetadata.getExpirationTime());
+//		message.setHeader(S3Constants.REPLICATION_STATUS, objectMetadata.getReplicationStatus());
+//		message.setHeader(S3Constants.STORAGE_CLASS, objectMetadata.getStorageClass());
+
+		/**
+		 * If includeBody != true, it is safe to close the object here. If
+		 * includeBody == true, the caller is responsible for closing the stream
+		 * and object once the body has been fully consumed. As of 2.17, the
+		 * consumer does not close the stream or object on commit.
+		 */
+		if (!configuration.isIncludeBody()) {
+			IOHelper.close(obj);
+		} else {
+			if (configuration.isAutocloseBody()) {
+				exchange.adapt(ExtendedExchange.class).addOnCompletion(new SynchronizationAdapter() {
+					@Override
+					public void onDone(Exchange exchange) {
+						IOHelper.close(obj);
+					}
+				});
+			}
+		}
+
 		return exchange;
 	}
 
@@ -94,5 +130,19 @@ public class OSSEndpoint extends ScheduledPollEndpoint {
 
 	public void setOssClient(OSS ossClient) {
 		this.ossClient = ossClient;
+	}
+
+	@Override
+	protected void doStart() throws Exception {
+		super.doStart();
+		ossClient= new OSSClientImpl(configuration).getOSSClient();
+	}
+
+	@Override
+	protected void doStop() throws Exception {
+		super.doStop();
+		if (ossClient != null) {
+			ossClient.shutdown();
+		}
 	}
 }

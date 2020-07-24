@@ -1,7 +1,9 @@
 package org.apache.camel.component.oss;
 
 import com.aliyun.oss.model.*;
-import org.apache.camel.*;
+import org.apache.camel.Exchange;
+import org.apache.camel.Message;
+import org.apache.camel.WrappedFile;
 import org.apache.camel.support.DefaultProducer;
 import org.apache.camel.util.FileUtil;
 import org.apache.camel.util.IOHelper;
@@ -9,10 +11,12 @@ import org.apache.camel.util.ObjectHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @program: camel-oss
@@ -24,6 +28,7 @@ public class OSSProducer extends DefaultProducer {
     private static final Logger LOG = LoggerFactory.getLogger(OSSProducer.class);
 
     private transient String s3ProducerToString;
+
     public OSSProducer(OSSEndpoint ossEndpoint) {
         super(ossEndpoint);
     }
@@ -51,7 +56,7 @@ public class OSSProducer extends DefaultProducer {
         if (obj instanceof File) {
             filePayload = (File)obj;
         } else {
-            throw new IllegalArgumentException("aws2-s3: MultiPart upload requires a File input.");
+            throw new IllegalArgumentException("oss: MultiPart upload requires a File input.");
         }
 
         final String keyName = determineKey(exchange);
@@ -93,7 +98,6 @@ public class OSSProducer extends DefaultProducer {
                     new CompleteMultipartUploadRequest(getConfiguration().getBucketName(), getConfiguration().getBucketName()+"/"+getConfiguration().getFileName(), uploadId, partETags);
 
              completeMultipartUploadResult = getEndpoint().getOssClient().completeMultipartUpload(completeMultipartUploadRequest);
-
 
         } catch (Exception e) {
             getEndpoint().getOssClient()
@@ -150,7 +154,7 @@ public class OSSProducer extends DefaultProducer {
 
         if (ObjectHelper.isEmpty(bucketName)) {
             bucketName = getConfiguration().getBucketName();
-            LOG.trace("AWS S3 Bucket name header is missing, using default one [{}]", bucketName);
+            LOG.trace("OSS Bucket name header is missing, using default one [{}]", bucketName);
         }
 
         if (bucketName == null) {
@@ -166,13 +170,15 @@ public class OSSProducer extends DefaultProducer {
             key = getConfiguration().getKeyName();
         }
         if (key == null) {
-            throw new IllegalArgumentException("AWS S3 Key header missing.");
+            throw new IllegalArgumentException("OSS Key header missing.");
         }
         return key;
     }
+
     protected OSSConfiguration getConfiguration() {
         return getEndpoint().getConfiguration();
     }
+
     public static Message getMessageForResponse(final Exchange exchange) {
         return exchange.getMessage();
     }

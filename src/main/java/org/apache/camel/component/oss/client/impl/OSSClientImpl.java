@@ -24,9 +24,9 @@ public class OSSClientImpl implements OSSClient {
     @Override
     public OSS getOSSClient() {
         //TODO 参考阿里云oss文档
-        String endpoint = ossConfiguration.getUriEndpoint();
-        String accessKeyId = ossConfiguration.getAccessKey();
-        String accessKeySecret = ossConfiguration.getSecretKey();
+        String endpoint = ossConfiguration.getEndpoint();
+        String accessKeyId = ossConfiguration.getAccessKeyId();
+        String accessKeySecret = ossConfiguration.getAccessKeySecret();
         OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
         return ossClient;
     }

@@ -32,15 +32,15 @@
             <version>3.4.1</version>
         </dependency>
 
-
         <dependency>
             <groupId>com.aliyun.oss</groupId>
             <artifactId>aliyun-sdk-oss</artifactId>
-            <version>3.8.0</version>
+            <version>3.10.2</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>1.18.12</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

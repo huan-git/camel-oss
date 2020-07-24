@@ -6,15 +6,13 @@
  **/
 package org.apache.camel.component.oss;
 
-import java.util.Map;
-import java.util.Set;
-
-import com.aliyun.oss.OSS;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.annotations.Component;
 import org.apache.camel.support.DefaultComponent;
+
+import java.util.Map;
 
 @Component("oss")
 public class OSSComponent extends DefaultComponent {
@@ -36,14 +34,13 @@ public class OSSComponent extends DefaultComponent {
         if (remaining == null || remaining.trim().length() == 0) {
             throw new IllegalArgumentException("Bucket name must be specified.");
         }
-        if (remaining.startsWith("arn:")) {
-            remaining = remaining.substring(remaining.lastIndexOf(':') + 1, remaining.length());
-        }
-        final OSSConfiguration configuration = this.configuration != null ? this.configuration.copy() : new OSSConfiguration();
+
+        final OSSConfiguration configuration = new OSSConfiguration();
         configuration.setBucketName(remaining);
         OSSEndpoint endpoint = new OSSEndpoint( this, uri,configuration);
         setProperties(endpoint, parameters);
-        if (!configuration.isUseIAMCredentials() && configuration.getAmazonS3Client() == null && (configuration.getAccessKey() == null || configuration.getSecretKey() == null)) {
+
+        if (configuration.getOssClient()== null && (configuration.getAccessKeyId() == null || configuration.getAccessKeySecret() == null)) {
             throw new IllegalArgumentException("useIAMCredentials is set to false, AmazonS3Client or accessKey and secretKey must be specified");
         }
 
@@ -54,17 +51,7 @@ public class OSSComponent extends DefaultComponent {
         return configuration;
     }
 
-    /**
-     * The component configuration
-     */
     public void setConfiguration(OSSConfiguration configuration) {
         this.configuration = configuration;
-    }
-
-    private void checkAndSetRegistryClient(OSSConfiguration configuration) {
-        Set<OSS> clients = getCamelContext().getRegistry().findByType(OSS.class);
-        if (clients.size() == 1) {
-            configuration.setOSSClient(clients.stream().findFirst().get());
-        }
     }
 }
