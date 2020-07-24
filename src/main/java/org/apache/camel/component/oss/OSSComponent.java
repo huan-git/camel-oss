@@ -42,8 +42,21 @@ public class OSSComponent extends DefaultComponent {
 
     @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
-        return null;
-//        return endpoint;
+        if (remaining == null || remaining.trim().length() == 0) {
+            throw new IllegalArgumentException("Bucket name must be specified.");
+        }
+        if (remaining.startsWith("arn:")) {
+            remaining = remaining.substring(remaining.lastIndexOf(':') + 1, remaining.length());
+        }
+        final OSSConfiguration configuration = this.configuration != null ? this.configuration.copy() : new OSSConfiguration();
+        configuration.setBucketName(remaining);
+        OSSEndpoint endpoint = new OSSEndpoint( this, uri,configuration);
+        setProperties(endpoint, parameters);
+        if (!configuration.isUseIAMCredentials() && configuration.getAmazonS3Client() == null && (configuration.getAccessKey() == null || configuration.getSecretKey() == null)) {
+            throw new IllegalArgumentException("useIAMCredentials is set to false, AmazonS3Client or accessKey and secretKey must be specified");
+        }
+
+        return endpoint;
     }
 
     public OSSConfiguration getConfiguration() {
