@@ -133,11 +133,12 @@ public class OSSProducer extends DefaultProducer {
             throw new Exception("上传的不是文件");
         }
         final String bucketName = determineBucketName(exchange);
-        final String key = determineKey(exchange);
-        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, bucketName+"/"+getConfiguration().getFileName(), filePayload);
+        //final String key = determineKey(exchange);
+        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, "test/"+filePayload.getName(), filePayload);
         PutObjectResult putObjectResult = getEndpoint().getOssClient().putObject(putObjectRequest);
            Message message = getMessageForResponse(exchange);
         message.setHeader(OSSConstants.E_TAG, putObjectResult.getETag());
+        message.setBody(putObjectResult.getETag());
         if (putObjectResult.getVersionId() != null) {
             message.setHeader(OSSConstants.VERSION_ID, putObjectResult.getVersionId());
         }

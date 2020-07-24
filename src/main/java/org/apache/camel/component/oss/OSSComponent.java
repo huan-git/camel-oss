@@ -8,6 +8,7 @@ package org.apache.camel.component.oss;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
+import org.apache.camel.component.oss.client.impl.OSSClientImpl;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.annotations.Component;
 import org.apache.camel.support.DefaultComponent;
@@ -39,6 +40,10 @@ public class OSSComponent extends DefaultComponent {
         configuration.setBucketName(remaining);
         OSSEndpoint endpoint = new OSSEndpoint( this, uri,configuration);
         setProperties(endpoint, parameters);
+        configuration.setAccessKeyId(parameters.remove("accessKeyId").toString());
+        configuration.setAccessKeySecret(parameters.remove("accessKeySecret").toString());
+        configuration.setEndpoint(parameters.remove("endpoint").toString());
+        configuration.setOssClient(new OSSClientImpl(configuration).getOSSClient());
 
         if (configuration.getOssClient()== null && (configuration.getAccessKeyId() == null || configuration.getAccessKeySecret() == null)) {
             throw new IllegalArgumentException("useIAMCredentials is set to false, AmazonS3Client or accessKey and secretKey must be specified");

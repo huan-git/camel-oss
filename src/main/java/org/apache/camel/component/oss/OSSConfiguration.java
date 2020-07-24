@@ -17,8 +17,11 @@ public class OSSConfiguration {
 
     @UriParam
     private OSS ossClient;
+    @UriParam
     private String endpoint;
+    @UriParam(label = "security", secret = true)
     private String accessKeyId;
+    @UriParam(label = "security", secret = true)
     private String accessKeySecret;
     private String bucketName;
     @UriParam(label = "consumer")
@@ -28,7 +31,7 @@ public class OSSConfiguration {
     @UriParam(label = "consumer")
     private String fileName;
     @UriParam(label = "producer")
-    private Boolean multiPartUpload;
+    private boolean multiPartUpload;
     @UriParam(label = "producer")
     private String keyName;
     @UriParam(label = "producer")
@@ -60,11 +63,11 @@ public class OSSConfiguration {
         this.fileName = fileName;
     }
 
-    public Boolean isMultiPartUpload() {
+    public boolean isMultiPartUpload() {
         return multiPartUpload;
     }
 
-    public void setMultiPartUpload(Boolean multiPartUpload) {
+    public void setMultiPartUpload(boolean multiPartUpload) {
         this.multiPartUpload = multiPartUpload;
     }
 
