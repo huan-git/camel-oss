@@ -13,9 +13,12 @@ import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.annotations.Component;
 import org.apache.camel.support.DefaultComponent;
 
+import java.lang.reflect.Field;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
 
-@Component("oss")
+//@Component("oss")
 public class OSSComponent extends DefaultComponent {
 
     @Metadata
@@ -37,9 +40,9 @@ public class OSSComponent extends DefaultComponent {
 
         final OSSConfiguration configuration = new OSSConfiguration();
         configuration.setBucketName(remaining);
-        OSSEndpoint endpoint = new OSSEndpoint( this, uri,configuration);
+        OSSEndpoint endpoint = new OSSEndpoint(this, uri, configuration);
         setProperties(endpoint, parameters);
-        if (configuration.getOssClient()== null && (configuration.getAccessKeyId() == null || configuration.getAccessKeySecret() == null)) {
+        if (configuration.getOssClient() == null && (configuration.getAccessKeyId() == null || configuration.getAccessKeySecret() == null)) {
             throw new IllegalArgumentException("ossClient or accessKeyId and accessKeySecret must be specified");
         }
 
@@ -56,13 +59,22 @@ public class OSSComponent extends DefaultComponent {
 
     @Override
     protected void setProperties(Endpoint endpoint, Map<String, Object> parameters) throws Exception {
-        super.setProperties(endpoint, parameters);
-        OSSEndpoint ossEndpoint=   (OSSEndpoint)endpoint;
+        endpoint.configureProperties(parameters);
+        OSSEndpoint ossEndpoint = (OSSEndpoint) endpoint;
         OSSConfiguration configuration = ossEndpoint.getConfiguration();
-        configuration.setAccessKeyId(parameters.remove("accessKeyId").toString());
-        configuration.setAccessKeySecret(parameters.remove("accessKeySecret").toString());
-        configuration.setEndpoint(parameters.remove("endpoint").toString());
-        configuration.setOssClient(new OSSClientImpl(configuration).getOSSClient());
-
+        Class<? extends OSSConfiguration> configurationClass = configuration.getClass();
+        Set<String> keys = parameters.keySet();
+        for (String key : keys) {
+            Field declaredField = configurationClass.getDeclaredField(key);
+            String filedType = declaredField.getType().getSimpleName();
+            declaredField.setAccessible(true);
+            if ("Boolean".equals(filedType)) {
+                declaredField.set(configuration, Boolean.getBoolean((String) parameters.get(key)));
+            } else {
+                declaredField.set(configuration, parameters.get(key));
+            }
+        }
+        parameters.clear();
+        System.out.println(configuration);
     }
 }
