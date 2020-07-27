@@ -16,7 +16,7 @@ public class CamelTest3 {
             @Override
             public void configure() throws Exception {
                 System.out.println("1111");
-                from("oss:ahuan?accessKeyId=LTAI4FpCK5xEYnMrJvFWa5iZ&accessKeySecret=82cACiCF4VLdrIMmAHHtWqn6KVUr8s&endpoint=oss-cn-beijing.aliyuncs.com")
+                from("oss:ahuan?prefix=test&accessKeyId=LTAI4FpCK5xEYnMrJvFWa5iZ&accessKeySecret=82cACiCF4VLdrIMmAHHtWqn6KVUr8s&endpoint=oss-cn-beijing.aliyuncs.com")
                         .process(new Processor() {
                             @Override
                             public void process(Exchange exchange) throws Exception {
