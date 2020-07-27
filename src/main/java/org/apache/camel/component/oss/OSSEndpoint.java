@@ -65,7 +65,6 @@ public class OSSEndpoint extends ScheduledPollEndpoint {
 		} else {
 			message.setBody(null);
 		}
-		message.setHeader(OSSConstants.KEY,obj.getKey());
 		message.setHeader(Exchange.FILE_NAME,obj.getKey().substring(obj.getKey().lastIndexOf("/")+1));
 
 //		message.setHeader(S3Constants.KEY, s3Object.getKey());
