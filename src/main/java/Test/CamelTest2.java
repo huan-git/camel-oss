@@ -46,7 +46,7 @@ public class CamelTest2 {
         producerTemplate.sendBody("direct:start","1111");
         ConsumerTemplate consumerTemplate = camelContext.createConsumerTemplate();
         ObjectListing o = (ObjectListing) consumerTemplate.receive("seda:end").getMessage().getBody();
-        System.out.println(o);
+        o.getObjectSummaries().forEach(e->System.out.println(e.getKey()));
         Thread.sleep(10000);
         synchronized (CamelTest.class){
             CamelTest.class.wait();

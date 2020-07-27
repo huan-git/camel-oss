@@ -25,6 +25,9 @@ public class OSSConfiguration {
     private String accessKeySecret;
     private String bucketName;
     @UriParam(label = "consumer")
+    private String prefix;
+    private String delimiter;
+    @UriParam(label = "consumer")
     private Boolean includeBody=true;
     @UriParam(label = "consumer")
     private Boolean autocloseBody =true ;
@@ -36,6 +39,9 @@ public class OSSConfiguration {
     private String keyName;
     @UriParam(label = "producer")
     private Boolean deleteAfterWrite=true;
+    private Boolean  deleteAfterRead=true;
+    private Boolean autoCreateBucket=true;
+    private String locationConstraint;
     @UriParam(label = "producer", defaultValue = "" + 25 * 1024 * 1024)
     private long partSize = 25 * 1024 * 1024;
     @UriParam(label = "producer", enums = "copyObject,listObjects,deleteObject,deleteBucket,listBuckets,getObject,getObjectRange")
@@ -47,6 +53,22 @@ public class OSSConfiguration {
 
     public void setOperation(OSSOperations operation) {
         this.operation = operation;
+    }
+
+    public String getPrefix() {
+        return prefix;
+    }
+
+    public void setPrefix(String prefix) {
+        this.prefix = prefix;
+    }
+
+    public String getDelimiter() {
+        return delimiter;
+    }
+
+    public void setDelimiter(String delimiter) {
+        this.delimiter = delimiter;
     }
 
     public Boolean isAutocloseBody() {
@@ -81,12 +103,28 @@ public class OSSConfiguration {
         this.multiPartUpload = multiPartUpload;
     }
 
+    public Boolean isDeleteAfterRead() {
+        return deleteAfterRead;
+    }
+
+    public void setDeleteAfterRead(Boolean deleteAfterRead) {
+        this.deleteAfterRead = deleteAfterRead;
+    }
+
     public Boolean isDeleteAfterWrite() {
         return deleteAfterWrite;
     }
 
     public void setIsDeleteAfterWrite(Boolean deleteAfterWrite) {
         this.deleteAfterWrite = deleteAfterWrite;
+    }
+
+    public Boolean isAutoCreateBucket() {
+        return autoCreateBucket;
+    }
+
+    public void setAutoCreateBucket(Boolean autoCreateBucket) {
+        this.autoCreateBucket = autoCreateBucket;
     }
 
     public String getKeyName() {
@@ -129,6 +167,14 @@ public class OSSConfiguration {
         this.bucketName = bucketName;
     }
 
+    public String getLocationConstraint() {
+        return locationConstraint;
+    }
+
+    public void setLocationConstraint(String locationConstraint) {
+        this.locationConstraint = locationConstraint;
+    }
+
     public long getPartSize() {
         return partSize;
     }
@@ -143,5 +189,28 @@ public class OSSConfiguration {
 
     public void setOssClient(OSS ossClient) {
         this.ossClient = ossClient;
+    }
+
+    @Override
+    public String toString() {
+        return "OSSConfiguration{" +
+                "ossClient=" + ossClient +
+                ", endpoint='" + endpoint + '\'' +
+                ", accessKeyId='" + accessKeyId + '\'' +
+                ", accessKeySecret='" + accessKeySecret + '\'' +
+                ", bucketName='" + bucketName + '\'' +
+                ", prefix='" + prefix + '\'' +
+                ", delimiter='" + delimiter + '\'' +
+                ", includeBody=" + includeBody +
+                ", autocloseBody=" + autocloseBody +
+                ", fileName='" + fileName + '\'' +
+                ", multiPartUpload=" + multiPartUpload +
+                ", keyName='" + keyName + '\'' +
+                ", deleteAfterWrite=" + deleteAfterWrite +
+                ", deleteAfterRead=" + deleteAfterRead +
+                ", autoCreateBucket=" + autoCreateBucket +
+                ", locationConstraint='" + locationConstraint + '\'' +
+                ", partSize=" + partSize +
+                '}';
     }
 }

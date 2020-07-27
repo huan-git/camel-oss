@@ -1,6 +1,10 @@
 package org.apache.camel.component.oss;
 
 import com.aliyun.oss.OSS;
+import com.aliyun.oss.OSSErrorCode;
+import com.aliyun.oss.ServiceException;
+import com.aliyun.oss.model.CreateBucketRequest;
+import com.aliyun.oss.model.ListObjectsRequest;
 import com.aliyun.oss.model.OSSObject;
 import com.aliyun.oss.model.ObjectMetadata;
 import org.apache.camel.*;
@@ -51,11 +55,11 @@ public class OSSEndpoint extends ScheduledPollEndpoint {
 		return createExchange(getExchangePattern(), obj);
 	}
 	public Exchange createExchange(ExchangePattern pattern, OSSObject obj) {
-		LOG.trace("Getting object with key [{}] from bucket [{}]...", obj.getKey(), obj.getBucketName());
+		LOG.info("Getting object with key [{}] from bucket [{}]...", obj.getKey(), obj.getBucketName());
 
 		ObjectMetadata objectMetadata = obj.getObjectMetadata();
 
-		LOG.trace("Got object [{}]", obj);
+		LOG.info("Got object [{}]", obj);
 
 		Exchange exchange = super.createExchange(pattern);
 		Message message = exchange.getIn();
@@ -139,6 +143,41 @@ public class OSSEndpoint extends ScheduledPollEndpoint {
 	protected void doStart() throws Exception {
 		super.doStart();
 		ossClient= new OSSClientImpl(configuration).getOSSClient();
+		String fileName = getConfiguration().getFileName();
+
+		if (fileName != null) {
+			LOG.info("File name [{}] requested, so skipping bucket check...", fileName);
+			return;
+		}
+
+		String bucketName = getConfiguration().getBucketName();
+		LOG.info("Querying whether bucket [{}] already exists...", bucketName);
+
+		String prefix = getConfiguration().getPrefix();
+
+		try {
+			ossClient.listObjects(new ListObjectsRequest(bucketName, prefix, null, null, maxMessagesPerPoll));
+			LOG.info("Bucket [{}] already exists", bucketName);
+			return;
+		} catch (ServiceException ase) {
+			/* 404 means the bucket doesn't exist */
+			if (OSSErrorCode.NO_SUCH_BUCKET.equals(ase.getErrorCode())) {
+				throw ase;
+			}
+		}
+
+		LOG.info("Bucket [{}] doesn't exist yet", bucketName);
+
+		if (getConfiguration().isAutoCreateBucket()) {
+			// creates the new bucket because it doesn't exist yet
+			CreateBucketRequest createBucketRequest = new CreateBucketRequest(getConfiguration().getBucketName());
+
+			LOG.info("Creating bucket [{}] in locationConstraint [{}] with request [{}]...", configuration.getBucketName(), configuration.getLocationConstraint(), createBucketRequest);
+
+			ossClient.createBucket(createBucketRequest);
+
+			LOG.info("Bucket created");
+		}
 	}
 
 	@Override
@@ -147,6 +186,6 @@ public class OSSEndpoint extends ScheduledPollEndpoint {
 		if (ossClient != null) {
 			ossClient.shutdown();
 		}
-		System.out.println("is stoped.....");
+		LOG.info("is stoped.....");
 	}
 }
