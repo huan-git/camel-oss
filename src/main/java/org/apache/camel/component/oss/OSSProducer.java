@@ -1,5 +1,6 @@
 package org.apache.camel.component.oss;
 
+import com.aliyun.oss.OSS;
 import com.aliyun.oss.model.*;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
@@ -17,6 +18,8 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.apache.camel.component.oss.OSSOperations.listBuckets;
 
 /**
  * @program: camel-oss
@@ -40,12 +43,98 @@ public class OSSProducer extends DefaultProducer {
 
     @Override
     public void process(Exchange exchange) throws Exception {
-            if (getConfiguration().isMultiPartUpload()) {
-                processMultiPart(exchange);
-            } else {
-                processSingleOp(exchange);
-            }
+      OSSOperations  operation = determineOperation(exchange);
+      if (ObjectHelper.isEmpty(operation)) {
+          if (getConfiguration().isMultiPartUpload()) {
+              processMultiPart(exchange);
+          } else {
+              processSingleOp(exchange);
+          }
+      }else {
+          switch (operation) {
+              case copyObject:
+                  copyObject(getEndpoint().getOssClient(), exchange);
+                  break;
+              case deleteObject:
+                  deleteObject(getEndpoint().getOssClient(), exchange);
+                  break;
+              case listBuckets:
+                  listBuckets(getEndpoint().getOssClient(), exchange);
+                  break;
+              case deleteBucket:
+                  deleteBucket(getEndpoint().getOssClient(), exchange);
+                  break;
+              case listObjects:
+                  listObjects(getEndpoint().getOssClient(), exchange);
+                  break;
+              case getObject:
+                  getObject(getEndpoint().getOssClient(), exchange);
+                  break;
+              case getObjectRange:
+                  getObjectRange(getEndpoint().getOssClient(), exchange);
+                  break;
+              default:
+                  throw new IllegalArgumentException("Unsupported operation");
+          }
+      }
+
     }
+
+    private void getObjectRange(OSS ossClient, Exchange exchange) {
+    }
+
+    private void getObject(OSS ossClient, Exchange exchange) {
+        String bucketName = determineBucketName(exchange);
+        String sourceKey = determineKey(exchange)+"/"+getConfiguration().getFileName();
+        OSSObject ossObject = ossClient.getObject(bucketName, sourceKey);
+        Message message = getMessageForResponse(exchange);
+        message.setBody(ossObject);
+    }
+
+    private void listObjects(OSS ossClient, Exchange exchange) {
+        String bucketName = determineBucketName(exchange);
+        ObjectListing objectListing = ossClient.listObjects(bucketName);
+        Message message = getMessageForResponse(exchange);
+        message.setBody(objectListing);
+    }
+
+    private void deleteBucket(OSS ossClient, Exchange exchange) {
+        String bucketName = determineBucketName(exchange);
+        ossClient.deleteBucket(bucketName);
+        Message message = getMessageForResponse(exchange);
+        message.setBody(true);
+    }
+
+    private void copyObject(OSS ossClient, Exchange exchange) {
+        String bucketName = determineBucketName(exchange);
+        String sourceKey = determineKey(exchange)+"/"+getConfiguration().getFileName();
+        String destinationKey = exchange.getIn().getHeader(OSSConstants.DESTINATION_KEY, String.class);
+        String bucketNameDestination = exchange.getIn().getHeader(OSSConstants.BUCKET_DESTINATION_NAME, String.class);
+        if (ObjectHelper.isEmpty(bucketNameDestination)) {
+            throw new IllegalArgumentException("Bucket Name Destination must be specified for copyObject Operation");
+        }
+        if (ObjectHelper.isEmpty(destinationKey)) {
+            throw new IllegalArgumentException("Destination Key must be specified for copyObject Operation");
+        }
+        CopyObjectResult copyObjectResult = ossClient.copyObject(bucketName, sourceKey, bucketNameDestination, destinationKey);
+        Message message = getMessageForResponse(exchange);
+        message.setBody(copyObjectResult);
+    }
+
+    private void listBuckets(OSS ossClient, Exchange exchange) {
+        List<Bucket> buckets = ossClient.listBuckets();
+        Message message = getMessageForResponse(exchange);
+        message.setBody(buckets);
+    }
+
+    private void deleteObject(OSS ossClient, Exchange exchange) {
+         String bucketName = determineBucketName(exchange);
+         String objectName = determineKey(exchange)+"/"+getConfiguration().getFileName();
+        ossClient.deleteObject(bucketName, objectName);
+        Message message = getMessageForResponse(exchange);
+        message.setBody(true);
+    }
+
     public void processMultiPart(final Exchange exchange) throws Exception {
         File filePayload = null;
         Object obj = exchange.getIn().getMandatoryBody();
@@ -60,7 +149,7 @@ public class OSSProducer extends DefaultProducer {
         }
 
         final String keyName = determineKey(exchange);
-        InitiateMultipartUploadRequest request = new InitiateMultipartUploadRequest(getConfiguration().getBucketName(), getConfiguration().getBucketName()+"/"+getConfiguration().getFileName());
+        InitiateMultipartUploadRequest request = new InitiateMultipartUploadRequest(getConfiguration().getBucketName(), keyName+"/"+getConfiguration().getFileName());
         InitiateMultipartUploadResult upresult = getEndpoint().getOssClient().initiateMultipartUpload(request);
         String uploadId = upresult.getUploadId();
         List<PartETag> partETags = new ArrayList<PartETag>();
@@ -175,7 +264,13 @@ public class OSSProducer extends DefaultProducer {
         }
         return key;
     }
-
+    private OSSOperations determineOperation(Exchange exchange) {
+        OSSOperations operation = exchange.getIn().getHeader(OSSConstants.OSS_OPERATION, OSSOperations.class);
+        if (operation == null) {
+            operation = getConfiguration().getOperation();
+        }
+        return operation;
+    }
     protected OSSConfiguration getConfiguration() {
         return getEndpoint().getConfiguration();
     }

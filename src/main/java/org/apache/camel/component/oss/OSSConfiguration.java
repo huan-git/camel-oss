@@ -38,6 +38,16 @@ public class OSSConfiguration {
     private Boolean deleteAfterWrite=true;
     @UriParam(label = "producer", defaultValue = "" + 25 * 1024 * 1024)
     private long partSize = 25 * 1024 * 1024;
+    @UriParam(label = "producer", enums = "copyObject,listObjects,deleteObject,deleteBucket,listBuckets,getObject,getObjectRange")
+    private OSSOperations operation;
+
+    public OSSOperations getOperation() {
+        return operation;
+    }
+
+    public void setOperation(OSSOperations operation) {
+        this.operation = operation;
+    }
 
     public Boolean isAutocloseBody() {
         return autocloseBody;

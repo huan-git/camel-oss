@@ -70,11 +70,12 @@ public class OSSComponent extends DefaultComponent {
             declaredField.setAccessible(true);
             if ("Boolean".equals(filedType)) {
                 declaredField.set(configuration, Boolean.getBoolean((String) parameters.get(key)));
-            } else {
+            } else if ("OSSOperations".equals(filedType)){
+                declaredField.set(configuration,OSSOperations.valueOf(parameters.get(key).toString()));
+            }else {
                 declaredField.set(configuration, parameters.get(key));
             }
         }
         parameters.clear();
-        System.out.println(configuration);
     }
 }
