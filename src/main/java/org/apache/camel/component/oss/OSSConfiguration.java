@@ -1,9 +1,6 @@
 package org.apache.camel.component.oss;
 
 import com.aliyun.oss.OSS;
-import org.apache.camel.RuntimeCamelException;
-import org.apache.camel.spi.UriParam;
-import org.apache.camel.spi.UriParams;
 
 /**
  * @program: camel-oss
@@ -12,39 +9,27 @@ import org.apache.camel.spi.UriParams;
  * @version: 2020-07-23 09:54
  **/
 
-@UriParams
 public class OSSConfiguration {
 
-    @UriParam
     private OSS ossClient;
-    @UriParam
     private String endpoint;
-    @UriParam(label = "security", secret = true)
     private String accessKeyId;
-    @UriParam(label = "security", secret = true)
     private String accessKeySecret;
     private String bucketName;
-    @UriParam(label = "consumer")
+    private String destinationBucket;
     private String prefix;
     private String delimiter;
-    @UriParam(label = "consumer")
     private Boolean includeBody=true;
-    @UriParam(label = "consumer")
     private Boolean autocloseBody =true ;
-    @UriParam(label = "consumer")
     private String fileName;
-    @UriParam(label = "producer")
     private boolean multiPartUpload;
-    @UriParam(label = "producer")
     private String keyName;
-    @UriParam(label = "producer")
     private Boolean deleteAfterWrite=true;
+    private Boolean moveAfterRead=false;
     private Boolean  deleteAfterRead=true;
     private Boolean autoCreateBucket=true;
     private String locationConstraint;
-    @UriParam(label = "producer", defaultValue = "" + 25 * 1024 * 1024)
     private long partSize = 25 * 1024 * 1024;
-    @UriParam(label = "producer", enums = "copyObject,listObjects,deleteObject,deleteBucket,listBuckets,getObject,getObjectRange")
     private OSSOperations operation;
 
     public OSSOperations getOperation() {
@@ -101,6 +86,14 @@ public class OSSConfiguration {
 
     public void setMultiPartUpload(boolean multiPartUpload) {
         this.multiPartUpload = multiPartUpload;
+    }
+
+    public Boolean isMoveAfterRead() {
+        return moveAfterRead;
+    }
+
+    public void setMoveAfterRead(Boolean moveAfterRead) {
+        this.moveAfterRead = moveAfterRead;
     }
 
     public Boolean isDeleteAfterRead() {
@@ -167,6 +160,14 @@ public class OSSConfiguration {
         this.bucketName = bucketName;
     }
 
+    public String getDestinationBucket() {
+        return destinationBucket;
+    }
+
+    public void setDestinationBucket(String destinationBucket) {
+        this.destinationBucket = destinationBucket;
+    }
+
     public String getLocationConstraint() {
         return locationConstraint;
     }
@@ -211,6 +212,7 @@ public class OSSConfiguration {
                 ", autoCreateBucket=" + autoCreateBucket +
                 ", locationConstraint='" + locationConstraint + '\'' +
                 ", partSize=" + partSize +
+                ", operation=" + operation +
                 '}';
     }
 }

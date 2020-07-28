@@ -1,10 +1,8 @@
 package org.apache.camel.component.oss;
 
 import com.aliyun.oss.OSS;
-import com.aliyun.oss.model.ListObjectsRequest;
-import com.aliyun.oss.model.OSSObject;
-import com.aliyun.oss.model.OSSObjectSummary;
-import com.aliyun.oss.model.ObjectListing;
+import com.aliyun.oss.ServiceException;
+import com.aliyun.oss.model.*;
 import org.apache.camel.AsyncCallback;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExtendedExchange;
@@ -27,11 +25,12 @@ import java.util.*;
  **/
 public class OSSConsumer extends ScheduledBatchPollingConsumer {
     private static final Logger LOG = LoggerFactory.getLogger(OSSConsumer.class);
+    private  String marker;
 
     public OSSConsumer(OSSEndpoint endpoint, Processor processor) {
         super(endpoint, processor);
     }
-    String marker;
+
     @Override
     public int processBatch(Queue<Object> exchanges) throws Exception {
         int total = exchanges.size();
@@ -61,7 +60,7 @@ public class OSSConsumer extends ScheduledBatchPollingConsumer {
 
                 @Override
                 public String toString() {
-                    return "S3ConsumerOnCompletion";
+                    return "OSSConsumerOnCompletion";
                 }
             });
 
@@ -146,8 +145,8 @@ public class OSSConsumer extends ScheduledBatchPollingConsumer {
                 //}
             }
         } catch (Throwable e) {
-            LOG.warn("Error getting S3Object due: {}", e.getMessage(), e);
-            // ensure all previous gathered s3 objects are closed
+            LOG.warn("Error getting OSSObject due: {}", e.getMessage(), e);
+            // ensure all previous gathered OSS objects are closed
             // if there was an exception creating the exchanges in this batch
             ossObjects.forEach(IOHelper::close);
             throw e;
@@ -169,30 +168,32 @@ public class OSSConsumer extends ScheduledBatchPollingConsumer {
         return getEndpoint().getConfiguration();
     }
     protected void processCommit(Exchange exchange) {
-        /*try {
+        try {
             if (getConfiguration().isMoveAfterRead()) {
-                String bucketName = exchange.getIn().getHeader(AWS2S3Constants.BUCKET_NAME, String.class);
-                String key = exchange.getIn().getHeader(AWS2S3Constants.KEY, String.class);
+                String bucketName = exchange.getIn().getHeader(OSSConstants.BUCKET_NAME, String.class);
+                String key = exchange.getIn().getHeader(OSSConstants.KEY, String.class);
 
                 LOG.trace("Moving object from bucket {} with key {} to bucket {}...", bucketName, key, getConfiguration().getDestinationBucket());
 
-                getAmazonS3Client().copyObject(CopyObjectRequest.builder().destinationKey(key).destinationBucket(getConfiguration().getDestinationBucket()).copySource(bucketName + "/" + key).build());
+                getOSSClient().copyObject(new CopyObjectRequest(getConfiguration().getBucketName(),key,getConfiguration().getDestinationBucket(),key));//.destinationKey(key).destinationBucket(getConfiguration().getDestinationBucket()).copySource(bucketName + "/" + key).build());
 
                 LOG.trace("Moved object from bucket {} with key {} to bucket {}...", bucketName, key, getConfiguration().getDestinationBucket());
             }
             if (getConfiguration().isDeleteAfterRead()) {
-                String bucketName = exchange.getIn().getHeader(AWS2S3Constants.BUCKET_NAME, String.class);
-                String key = exchange.getIn().getHeader(AWS2S3Constants.KEY, String.class);
+                String bucketName = exchange.getIn().getHeader(OSSConstants.BUCKET_NAME, String.class);
+                String key = exchange.getIn().getHeader(OSSConstants.KEY, String.class);
 
                 LOG.trace("Deleting object from bucket {} with key {}...", bucketName, key);
-
-                getAmazonS3Client().deleteObject(DeleteObjectRequest.builder().bucket(getConfiguration().getBucketName()).key(key).build());
+                DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(getConfiguration().getBucketName());
+                deleteObjectsRequest.setKey(key);
+                getOSSClient().deleteObject(deleteObjectsRequest);
+                //(DeleteObjectsRequest.builder().bucket(getConfiguration().getBucketName()).key(key).build());
 
                 LOG.trace("Deleted object from bucket {} with key {}...", bucketName, key);
             }
-        } catch (AwsServiceException e) {
+        } catch (ServiceException e) {
             getExceptionHandler().handleException("Error occurred during moving or deleting object. This exception is ignored.", exchange, e);
-        }*/
+        }
     }
 
     /**

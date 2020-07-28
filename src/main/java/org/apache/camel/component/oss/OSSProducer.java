@@ -19,8 +19,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.camel.component.oss.OSSOperations.listBuckets;
-
 /**
  * @program: camel-oss
  * @description: this is the description of the OSSProducer class

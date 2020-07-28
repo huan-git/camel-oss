@@ -8,15 +8,12 @@ package org.apache.camel.component.oss;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
-import org.apache.camel.component.oss.client.impl.OSSClientImpl;
 import org.apache.camel.spi.Metadata;
-import org.apache.camel.spi.annotations.Component;
 import org.apache.camel.support.DefaultComponent;
 
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 //@Component("oss")
 public class OSSComponent extends DefaultComponent {

@@ -17,175 +17,178 @@ import org.apache.camel.util.IOHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
+import java.text.ParseException;
 
 @UriEndpoint(firstVersion = "3.2.0", scheme = "oss", title = "OSS Storage Service", syntax = "oss://bucketName", category = {Category.CLOUD, Category.FILE})
 public class OSSEndpoint extends ScheduledPollEndpoint {
-	private static final Logger LOG = LoggerFactory.getLogger(OSSEndpoint.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OSSEndpoint.class);
 
-	private OSS ossClient;
-	@UriParam
-	private final OSSConfiguration configuration;
-	@UriParam(label = "consumer", defaultValue = "10")
-	private int maxMessagesPerPoll = 10;
-	@UriParam(label = "consumer", defaultValue = "60")
-	private int maxConnections = 50 + maxMessagesPerPoll;
+    private OSS ossClient;
+    @UriParam
+    private final OSSConfiguration configuration;
+    @UriParam(label = "consumer", defaultValue = "10")
+    private int maxMessagesPerPoll = 10;
+    @UriParam(label = "consumer", defaultValue = "60")
+    private int maxConnections = 50 + maxMessagesPerPoll;
 
-	public OSSEndpoint(OSSComponent component, String uri, OSSConfiguration configuration) {
-		super(uri, component);
-		this.configuration=configuration;
-	}
- 
-	@Override
-	public Producer createProducer() throws Exception {
-		return new OSSProducer(this);
-	}
- 
-	@Override
-	public Consumer createConsumer(Processor processor) throws Exception {
-		return new OSSConsumer(this, processor);
-	}
- 
-	@Override
-	public boolean isSingleton() {
-		return false;
-	}
+    public OSSEndpoint(OSSComponent component, String uri, OSSConfiguration configuration) {
+        super(uri, component);
+        this.configuration = configuration;
+    }
 
-	public Exchange createExchange(OSSObject obj) {
-		return createExchange(getExchangePattern(), obj);
-	}
-	public Exchange createExchange(ExchangePattern pattern, OSSObject obj) {
-		LOG.info("Getting object with key [{}] from bucket [{}]...", obj.getKey(), obj.getBucketName());
+    @Override
+    public Producer createProducer() throws Exception {
+        return new OSSProducer(this);
+    }
 
-		ObjectMetadata objectMetadata = obj.getObjectMetadata();
+    @Override
+    public Consumer createConsumer(Processor processor) throws Exception {
+        return new OSSConsumer(this, processor);
+    }
 
-		LOG.info("Got object [{}]", obj);
+    @Override
+    public boolean isSingleton() {
+        return false;
+    }
 
-		Exchange exchange = super.createExchange(pattern);
-		Message message = exchange.getIn();
+    public Exchange createExchange(OSSObject obj) {
+        return createExchange(getExchangePattern(), obj);
+    }
 
-		if (configuration.isIncludeBody()) {
-			message.setBody(obj.getObjectContent());
-		} else {
-			message.setBody(null);
-		}
-		message.setHeader(Exchange.FILE_NAME,obj.getKey().substring(obj.getKey().lastIndexOf("/")+1));
+    public Exchange createExchange(ExchangePattern pattern, OSSObject obj) {
+        LOG.info("Getting object with key [{}] from bucket [{}]...", obj.getKey(), obj.getBucketName());
 
-//		message.setHeader(S3Constants.KEY, s3Object.getKey());
-//		message.setHeader(S3Constants.BUCKET_NAME, s3Object.getBucketName());
-//		message.setHeader(S3Constants.E_TAG, objectMetadata.getETag());
-//		message.setHeader(S3Constants.LAST_MODIFIED, objectMetadata.getLastModified());
-//		message.setHeader(S3Constants.VERSION_ID, objectMetadata.getVersionId());
-//		message.setHeader(S3Constants.CONTENT_TYPE, objectMetadata.getContentType());
-//		message.setHeader(S3Constants.CONTENT_MD5, objectMetadata.getContentMD5());
-//		message.setHeader(S3Constants.CONTENT_LENGTH, objectMetadata.getContentLength());
-//		message.setHeader(S3Constants.CONTENT_ENCODING, objectMetadata.getContentEncoding());
-//		message.setHeader(S3Constants.CONTENT_DISPOSITION, objectMetadata.getContentDisposition());
-//		message.setHeader(S3Constants.CACHE_CONTROL, objectMetadata.getCacheControl());
-//		message.setHeader(S3Constants.S3_HEADERS, objectMetadata.getRawMetadata());
-//		message.setHeader(S3Constants.SERVER_SIDE_ENCRYPTION, objectMetadata.getSSEAlgorithm());
-//		message.setHeader(S3Constants.USER_METADATA, objectMetadata.getUserMetadata());
-//		message.setHeader(S3Constants.EXPIRATION_TIME, objectMetadata.getExpirationTime());
-//		message.setHeader(S3Constants.REPLICATION_STATUS, objectMetadata.getReplicationStatus());
-//		message.setHeader(S3Constants.STORAGE_CLASS, objectMetadata.getStorageClass());
+        ObjectMetadata objectMetadata = obj.getObjectMetadata();
 
-		/**
-		 * If includeBody != true, it is safe to close the object here. If
-		 * includeBody == true, the caller is responsible for closing the stream
-		 * and object once the body has been fully consumed. As of 2.17, the
-		 * consumer does not close the stream or object on commit.
-		 */
-		if (!configuration.isIncludeBody()) {
-			IOHelper.close(obj);
-		} else {
-			if (configuration.isAutocloseBody()) {
-				exchange.adapt(ExtendedExchange.class).addOnCompletion(new SynchronizationAdapter() {
-					@Override
-					public void onDone(Exchange exchange) {
-						IOHelper.close(obj);
-					}
-				});
-			}
-		}
+        LOG.info("Got object [{}]", obj);
 
-		return exchange;
-	}
+        Exchange exchange = super.createExchange(pattern);
+        Message message = exchange.getIn();
 
-	public OSSConfiguration getConfiguration() {
-		return configuration;
-	}
+        if (configuration.isIncludeBody()) {
+            message.setBody(obj.getObjectContent());
+        } else {
+            message.setBody(null);
+        }
+        message.setHeader(Exchange.FILE_NAME, obj.getKey().substring(obj.getKey().lastIndexOf("/") + 1));
 
-	public int getMaxMessagesPerPoll() {
-		return maxMessagesPerPoll;
-	}
+		message.setHeader(OSSConstants.KEY, obj.getKey());
+		message.setHeader(OSSConstants.BUCKET_NAME, obj.getBucketName());
+		message.setHeader(OSSConstants.E_TAG, objectMetadata.getETag());
+		message.setHeader(OSSConstants.LAST_MODIFIED, objectMetadata.getLastModified());
+		message.setHeader(OSSConstants.VERSION_ID, objectMetadata.getVersionId());
+		message.setHeader(OSSConstants.CONTENT_TYPE, objectMetadata.getContentType());
+		message.setHeader(OSSConstants.CONTENT_MD5, objectMetadata.getContentMD5());
+		message.setHeader(OSSConstants.CONTENT_LENGTH, objectMetadata.getContentLength());
+		message.setHeader(OSSConstants.CONTENT_ENCODING, objectMetadata.getContentEncoding());
+		message.setHeader(OSSConstants.CONTENT_DISPOSITION, objectMetadata.getContentDisposition());
+		message.setHeader(OSSConstants.CACHE_CONTROL, objectMetadata.getCacheControl());
+		message.setHeader(OSSConstants.OSS_HEADERS, objectMetadata.getRawMetadata());
+		message.setHeader(OSSConstants.SERVER_SIDE_ENCRYPTION, objectMetadata.getServerSideEncryption());
+		message.setHeader(OSSConstants.USER_METADATA, objectMetadata.getUserMetadata());
+        try {
+            message.setHeader(OSSConstants.EXPIRATION_TIME, objectMetadata.getExpirationTime());
+        } catch (ParseException e) {
+          LOG.error(" setting EXPIRATION_TIME is failed");
+        }
+        message.setHeader(OSSConstants.STORAGE_CLASS, objectMetadata.getObjectStorageClass());
 
-	public void setMaxMessagesPerPoll(int maxMessagesPerPoll) {
-		this.maxMessagesPerPoll = maxMessagesPerPoll;
-	}
+        /**
+         * If includeBody != true, it is safe to close the object here. If
+         * includeBody == true, the caller is responsible for closing the stream
+         * and object once the body has been fully consumed. As of 2.17, the
+         * consumer does not close the stream or object on commit.
+         */
+        if (!configuration.isIncludeBody()) {
+            IOHelper.close(obj);
+        } else {
+            if (configuration.isAutocloseBody()) {
+                exchange.adapt(ExtendedExchange.class).addOnCompletion(new SynchronizationAdapter() {
+                    @Override
+                    public void onDone(Exchange exchange) {
+                        IOHelper.close(obj);
+                    }
+                });
+            }
+        }
 
-	public int getMaxConnections() {
-		return maxConnections;
-	}
+        return exchange;
+    }
 
-	public void setMaxConnections(int maxConnections) {
-		this.maxConnections = maxConnections;
-	}
+    public OSSConfiguration getConfiguration() {
+        return configuration;
+    }
 
-	public OSS getOssClient() {
-		return ossClient;
-	}
+    public int getMaxMessagesPerPoll() {
+        return maxMessagesPerPoll;
+    }
 
-	public void setOssClient(OSS ossClient) {
-		this.ossClient = ossClient;
-	}
+    public void setMaxMessagesPerPoll(int maxMessagesPerPoll) {
+        this.maxMessagesPerPoll = maxMessagesPerPoll;
+    }
 
-	@Override
-	protected void doStart() throws Exception {
-		super.doStart();
-		ossClient= new OSSClientImpl(configuration).getOSSClient();
-		String fileName = getConfiguration().getFileName();
+    public int getMaxConnections() {
+        return maxConnections;
+    }
 
-		if (fileName != null) {
-			LOG.info("File name [{}] requested, so skipping bucket check...", fileName);
-			return;
-		}
+    public void setMaxConnections(int maxConnections) {
+        this.maxConnections = maxConnections;
+    }
 
-		String bucketName = getConfiguration().getBucketName();
+    public OSS getOssClient() {
+        return ossClient;
+    }
+
+    public void setOssClient(OSS ossClient) {
+        this.ossClient = ossClient;
+    }
+
+    @Override
+    protected void doStart() throws Exception {
+        super.doStart();
+        ossClient = new OSSClientImpl(configuration).getOSSClient();
+        String fileName = getConfiguration().getFileName();
+
+        if (fileName != null) {
+            LOG.info("File name [{}] requested, so skipping bucket check...", fileName);
+            return;
+        }
+
+        String bucketName = getConfiguration().getBucketName();
 		LOG.info("Querying whether bucket [{}] already exists...", bucketName);
 
-		String prefix = getConfiguration().getPrefix();
+        String prefix = getConfiguration().getPrefix();
 
-		try {
-			ossClient.listObjects(new ListObjectsRequest(bucketName, prefix, null, null, maxMessagesPerPoll));
-			LOG.info("Bucket [{}] already exists", bucketName);
-			return;
-		} catch (ServiceException ase) {
-			/* 404 means the bucket doesn't exist */
-			if (OSSErrorCode.NO_SUCH_BUCKET.equals(ase.getErrorCode())) {
-				throw ase;
-			}
-		}
+        try {
+            ossClient.listObjects(new ListObjectsRequest(bucketName, prefix, null, null, maxMessagesPerPoll));
+            LOG.info("Bucket [{}] already exists", bucketName);
+            return;
+        } catch (ServiceException ase) {
+            /* NO_SUCH_BUCKET means the bucket doesn't exist */
+            LOG.error("Bucket [{}] doesn't exist yet", bucketName);
+            if (OSSErrorCode.NO_SUCH_BUCKET.equals(ase.getErrorCode())) {
+                if (getConfiguration().isAutoCreateBucket()) {
+                    // creates the new bucket because it doesn't exist yet
+                    CreateBucketRequest createBucketRequest = new CreateBucketRequest(getConfiguration().getBucketName());
 
-		LOG.info("Bucket [{}] doesn't exist yet", bucketName);
+                    LOG.info("Creating bucket [{}] in locationConstraint [{}] with request [{}]...", configuration.getBucketName(), configuration.getLocationConstraint(), createBucketRequest);
 
-		if (getConfiguration().isAutoCreateBucket()) {
-			// creates the new bucket because it doesn't exist yet
-			CreateBucketRequest createBucketRequest = new CreateBucketRequest(getConfiguration().getBucketName());
+                    ossClient.createBucket(createBucketRequest);
 
-			LOG.info("Creating bucket [{}] in locationConstraint [{}] with request [{}]...", configuration.getBucketName(), configuration.getLocationConstraint(), createBucketRequest);
+                    LOG.info("Bucket created");
+                }
+            } else {
+                throw ase;
+            }
+        }
+    }
 
-			ossClient.createBucket(createBucketRequest);
-
-			LOG.info("Bucket created");
-		}
-	}
-
-	@Override
-	protected void doStop() throws Exception {
-		super.doStop();
-		if (ossClient != null) {
-			ossClient.shutdown();
-		}
-		LOG.info("is stoped.....");
-	}
+    @Override
+    protected void doStop() throws Exception {
+        super.doStop();
+        if (ossClient != null) {
+            ossClient.shutdown();
+        }
+        LOG.info("is stoped.....");
+    }
 }

@@ -20,7 +20,9 @@ public interface OSSConstants {
     String OSS_OPERATION = "CamelOSSOperation";
     String SERVER_SIDE_ENCRYPTION = "CamelOSSServerSideEncryption";
     String EXPIRATION_TIME = "CamelOSSExpirationTime";
-    String REPLICATION_STATUS = "CamelOSSReplicationStatus";
     String RANGE_START = "CamelOSSRangeStart";
     String RANGE_END = "CamelOSSRangeEnd";
+    String OSS_HEADERS = "CamelAwsOSSHeaders";
+    String USER_METADATA = "CamelAwsOSSUserMetadata";
+
 }

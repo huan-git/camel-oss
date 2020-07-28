@@ -16,31 +16,15 @@ public class CamelTest3 {
             @Override
             public void configure() throws Exception {
                 System.out.println("1111");
-                from("oss:ahuan?prefix=test&accessKeyId=LTAI4FpCK5xEYnMrJvFWa5iZ&accessKeySecret=82cACiCF4VLdrIMmAHHtWqn6KVUr8s&endpoint=oss-cn-beijing.aliyuncs.com")
-                        .process(new Processor() {
-                            @Override
-                            public void process(Exchange exchange) throws Exception {
-                                Message in = exchange.getIn();
-                                System.out.println(in);
-                            }
-                        })
-                        .to("file:D:\\text");
-                        //.to("seda:end");
-
-                System.out.println("222");
+                from("oss:ahuan?prefix=test&moveAfterRead=true&deleteAfterRead=false&destinationBucket=test2&accessKeyId=LTAI4FpCK5xEYnMrJvFWa5iZ&accessKeySecret=82cACiCF4VLdrIMmAHHtWqn6KVUr8s&endpoint=oss-cn-beijing.aliyuncs.com")
+                        .to("file:D:\\temp");
+                System.out.println("2222s");
 
             }
         });
         camelContext.start();
-       /* ProducerTemplate producerTemplate = camelContext.createProducerTemplate();
-        producerTemplate.sendBody("direct:start","1111");*/
         ConsumerTemplate consumerTemplate = camelContext.createConsumerTemplate();
-       /* ObjectListing o = (ObjectListing) consumerTemplate.receive("seda:end").getMessage().getBody();
-        System.out.println(o);*/
         Thread.sleep(10000);
-        synchronized (CamelTest.class){
-            CamelTest.class.wait();
-        }
         camelContext.stop();
     }
 }
